@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add to your global styles or a specific CSS module */
+
+.input-hidden {
+  background: transparent; /* Hide the background */
+  border: none;            /* Hide the border */
+  padding: 10px;           /* Add padding to make input area larger */
+  margin: 0;               /* Remove margin */
+  box-shadow: none;        /* Remove shadow */
+  outline: none;           /* Remove outline */
+  cursor: pointer;         /* Change cursor to indicate interactivity */
+  width: 100%;             /* Make the input take full width of the cell */
+  height: 100%;            /* Make the input take full height of the cell */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.input-hidden:focus {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Add shadow when focused */
+  outline: none;                        /* Remove outline when focused */
+}
+
+/* Optional: Add padding to the table cell to ensure input fields fit well */
+.table-cell {
+  position: relative; /* Ensure relative positioning for absolute positioning of shadow */
+  padding: 10px;     /* Add padding inside table cells */
+}
