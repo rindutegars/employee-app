@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { FaPlus } from 'react-icons/fa';
-import Snackbar from './Snackbar'; // Import the Snackbar component
+import Snackbar from './Snackbar';
 // import Navbar from './Navbar';
 
 const Table = () => {
     const [employees, setEmployees] = useState([]);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [snackbar, setSnackbar] = useState({ message: '', type: '' });
+    const [autosaveEnabled, setAutosaveEnabled] = useState(true); // New state for autosave
 
     useEffect(() => {
         axios.get('http://localhost:8080/api/employees')
@@ -21,7 +22,17 @@ const Table = () => {
             });
     }, []);
 
-    const handleSave = () => {
+    useEffect(() => {
+        if (!autosaveEnabled) return;
+
+        const intervalId = setInterval(() => {
+            handleSave('autosave');
+        }, 6000); // Autosave every 60 seconds
+
+        return () => clearInterval(intervalId);
+    }, [employees, autosaveEnabled]);
+
+    const handleSave = (source = 'manual') => {
         const newEmployees = employees.filter(emp => emp.id === null);
         const existingEmployees = employees.filter(emp => emp.id !== null);
 
@@ -39,11 +50,15 @@ const Table = () => {
                     ...prevEmployees.filter(emp => emp.id !== null),
                     ...response.data
                 ]);
-                setSnackbar({ message: 'New employees added successfully!', type: 'success' });
+                setSnackbar({
+                    message: source === 'autosave' ? 'Auto save new employees successfully!' : 'New employees added successfully!',
+                    type: 'success',
+                    color: autosaveEnabled ? 'success' : 'error'
+                });
             })
             .catch(error => {
                 console.error('Error creating new employees:', error);
-                setSnackbar({ message: 'Error creating new employees!', type: 'error' });
+                setSnackbar({ message: 'Error creating new employees!', type: 'error', color: 'error' });
             });
 
         // Handle existing employees update
@@ -59,27 +74,31 @@ const Table = () => {
         axios.put('http://localhost:8080/api/employees/update', existingEmployeesPayload)
             .then(response => {
                 console.log('Existing employees updated:', response.data);
-                setSnackbar({ message: 'Existing employees updated successfully!', type: 'success' });
+                setSnackbar({
+                    message: source === 'autosave' ? 'Auto save existing employees successfully!' : 'Existing employees updated successfully!',
+                    type: 'success',
+                    color: autosaveEnabled ? 'success' : 'error'
+                });
             })
             .catch(error => {
                 console.error('Error updating existing employees:', error);
-                setSnackbar({ message: 'Error updating existing employees!', type: 'error' });
+                setSnackbar({ message: 'Error updating existing employees!', type: 'error', color: 'error' });
             });
     };
 
     const handleDelete = () => {
         if (selectedIds.size === 0) return;
-    
+
         // Show confirmation prompt
         const confirmed = window.confirm('Are you sure you want to delete the selected employee(s)?');
-    
+
         if (!confirmed) {
             // If user cancels, do nothing
             return;
         }
-    
+
         const ids = Array.from(selectedIds).join(',');
-    
+
         if (selectedIds.size === 1) {
             axios.delete(`http://localhost:8080/api/employees/delete/${Array.from(selectedIds)[0]}`)
                 .then(() => {
@@ -104,7 +123,6 @@ const Table = () => {
                 });
         }
     };
-    
 
     const handleAddRow = () => {
         setEmployees(prevEmployees => [
@@ -134,7 +152,16 @@ const Table = () => {
     };
 
     const handleSnackbarClose = () => {
-        setSnackbar({ message: '', type: '' });
+        setSnackbar({ message: '', type: '', color: '' });
+    };
+
+    const toggleAutosave = () => {
+        setAutosaveEnabled(prev => !prev);
+        setSnackbar({
+            message: `Autosave ${autosaveEnabled ? 'disabled' : 'enabled'}`,
+            type: 'info',
+            color: autosaveEnabled ? 'error' : 'success'
+        });
     };
 
     return (
@@ -145,6 +172,7 @@ const Table = () => {
                     <Snackbar 
                         message={snackbar.message} 
                         type={snackbar.type} 
+                        color={snackbar.color} 
                         onClose={handleSnackbarClose} 
                     />
                 )}
@@ -154,6 +182,12 @@ const Table = () => {
                     </button>
                     <button onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded">
                         Delete
+                    </button>
+                    <button 
+                        onClick={toggleAutosave} 
+                        className={`ml-2 px-4 py-2 rounded ${autosaveEnabled ? 'bg-gray-500' : 'bg-blue-500'} text-white`}
+                    >
+                        {autosaveEnabled ? 'Disable Autosave' : 'Enable Autosave'}
                     </button>
                 </div>
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -202,7 +236,7 @@ const Table = () => {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                    {employee.id || 'New'}
+                                    {employee.id}
                                 </td>
                                 <td className="px-6 py-4 table-cell">
                                     <input
